@@ -1,0 +1,29 @@
+{
+  "name": "parse-string",
+  "version": "1.0.0",
+  "description": "..",
+  "main": "dist/index.js",
+  "typings": "types/index.d.ts",
+  "repository": "https://github.com/kenote/parse-string.git",
+  "author": "thondery <thondery@163.com>",
+  "license": "MIT",
+  "scripts": {
+    "test": "jest",
+    "build": "rm -rf ./dist && tsc"
+  },
+  "devDependencies": {
+    "@types/jest": "^25.2.3",
+    "@types/lodash": "^4.14.162",
+    "@types/node": "^14.11.8",
+    "jest": "^25.5.4",
+    "ts-jest": "^25.5.1",
+    "tslint": "^6.1.3",
+    "typescript": "^3.9.7"
+  },
+  "engines": {
+    "node": ">8.0.0"
+  },
+  "dependencies": {
+    "rule-judgment": "^1.1.2"
+  }
+}
