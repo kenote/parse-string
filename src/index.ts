@@ -1,14 +1,15 @@
-import { isString, isPlainObject, isNumber, isRegExp, isArray, compact, get, zipObject, map, omit, set } from 'lodash'
+import { isString, isPlainObject, isNumber, isRegExp, isArray, compact, get, zipObject, map, omit, set, orderBy } from 'lodash'
 import { ParseData } from '../types'
-import runJudgment, { emit, isDateString } from 'rule-judgment'
+import ruleJudgment, { emit, isDateString } from 'rule-judgment'
 
 /**
  * 解析字符串
  * @param options 
  * @param customize 
  */
-export function parseData (options: ParseData.options, customize?: Record<string, Function>): (data: string) => Record<string, any> {
+export function parseData (options: ParseData.options, customize?: Record<string, Function>): (data: string) => Record<string, any> | string {
   return (data: string) => {
+    if (!options) return data
     let { separator, collection, omits } = options
     let list = data.split(separator)
     let values: any[] = list.map( (v: string, i: number) => {
@@ -17,11 +18,41 @@ export function parseData (options: ParseData.options, customize?: Record<string
       return value
     })
     let obj = zipObject(map(collection, 'key'), values)
-    let results = collection.filter( runJudgment({ result: { $exists: true } }) )
+    let results = collection.filter( ruleJudgment({ result: { $exists: true } }) )
     for (let item of results) {
       set( obj, item.key, formatData(item.format, customize)(getResultValue(item.result!, customize)(obj)) )
     }
     return omit(obj, omits || [])
+  }
+}
+
+/**
+ * 解析一个MsgBody
+ * @param options 
+ * @param customize 
+ */
+export function parseBody (options: ParseData.parse[], customize?: Record<string, Function>): (msgbody: Record<string, any>) => Record<string, any> {
+  return (msgbody: Record<string, any>) => {
+    if (!options) return msgbody
+    for (let key in msgbody) {
+      let opts = options.find( ruleJudgment({ key }) )
+      if (opts) {
+        let parser = parseData(opts, customize)
+        let value = msgbody[key]
+        if (isArray(value)) {
+          value = value.map( parser )
+          if (opts.orderBy) {
+            let { iteratees, orders } = opts.orderBy
+            value = orderBy(value, iteratees, orders)
+          }
+        }
+        else {
+          parser(value)
+        }
+        set(msgbody, key, value)
+      }
+    }
+    return msgbody
   }
 }
 

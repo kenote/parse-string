@@ -1,6 +1,6 @@
 {
   "name": "parse-string",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Parse the string into a Map.",
   "main": "dist/index.js",
   "typings": "types/index.d.ts",
@@ -16,8 +16,8 @@
   },
   "devDependencies": {
     "@types/jest": "^25.2.3",
-    "@types/lodash": "^4.14.162",
-    "@types/node": "^14.11.8",
+    "@types/lodash": "^4.14.163",
+    "@types/node": "^14.14.2",
     "jest": "^25.5.4",
     "ts-jest": "^25.5.1",
     "tslint": "^6.1.3",
@@ -32,6 +32,7 @@
   "keywords": [
     "parser",
     "format",
-    "map"
+    "map",
+    "msbody"
   ]
 }

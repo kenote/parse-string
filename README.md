@@ -39,11 +39,19 @@ Format Data.
 
 ### parseData (options: ParseData.options, customize?: Record<string, Function>): (data: string) => Record<string, any>
 
-Parse the string to the specified result。
+Parse the string to the specified result.
 
 - `options` - parsing options
 - `customize` - map of custom function
 - `data` - data of need parse
+
+### parseBody (options: ParseData.parse[], customize?: Record<string, Function>): (msgbody: Record<string, any>) => Record<string, any>
+
+Parse the msbody to the specified result.
+
+- `options` - parsing options
+- `customize` - map of custom function
+- `msbody` - msbody of need parse
 
 ## Usages
 

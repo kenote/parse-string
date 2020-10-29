@@ -31,12 +31,14 @@ var __spread = (this && this.__spread) || function () {
     return ar;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.toValue = exports.formatData = exports.parseData = void 0;
+exports.toValue = exports.formatData = exports.parseBody = exports.parseData = void 0;
 var lodash_1 = require("lodash");
 var rule_judgment_1 = require("rule-judgment");
 function parseData(options, customize) {
     return function (data) {
         var e_1, _a;
+        if (!options)
+            return data;
         var separator = options.separator, collection = options.collection, omits = options.omits;
         var list = data.split(separator);
         var values = list.map(function (v, i) {
@@ -63,6 +65,32 @@ function parseData(options, customize) {
     };
 }
 exports.parseData = parseData;
+function parseBody(options, customize) {
+    return function (msgbody) {
+        if (!options)
+            return msgbody;
+        for (var key in msgbody) {
+            var opts = options.find(rule_judgment_1.default({ key: key }));
+            if (opts) {
+                var parser = parseData(opts, customize);
+                var value = msgbody[key];
+                if (lodash_1.isArray(value)) {
+                    value = value.map(parser);
+                    if (opts.orderBy) {
+                        var _a = opts.orderBy, iteratees = _a.iteratees, orders = _a.orders;
+                        value = lodash_1.orderBy(value, iteratees, orders);
+                    }
+                }
+                else {
+                    parser(value);
+                }
+                lodash_1.set(msgbody, key, value);
+            }
+        }
+        return msgbody;
+    };
+}
+exports.parseBody = parseBody;
 function formatData(formats, customize) {
     return function (value) {
         var e_2, _a;

@@ -171,7 +171,7 @@ describe('\nTests', () => {
         ],
         omits: [ 'user' ]
       }
-      let result = parseData(options, customize)('20201027;39554;{username:\'thondery\',group:{name:\'管理员\',level:9999}}')
+      let result = parseData(options, customize)('20201027;39554;{username:\'thondery\',group:{name:\'管理员\',level:9999}}') as Record<string, any>
       expect(result.username).toBe('thondery')
       expect(result.group).toBe('管理员')
       expect(result.level).toBe(9999)

@@ -1,12 +1,16 @@
 
 export declare namespace ParseData {
 
+  interface parse extends options {
+    key               : string
+    orderBy          ?: orderBy
+  }
+
   interface options {
     separator         : string | RegExp
     collection        : collection[]
     filter           ?: number[]
     omits            ?: string[]
-    orderBy          ?: orderBy
   }
 
   interface collection {
@@ -42,8 +46,11 @@ export declare namespace ParseData {
   }
 }
 
-export function parseData (options: ParseData.options): (data: string) => Record<string, any>
-export function parseData (options: ParseData.options, customize: Record<string, Function>): (data: string) => Record<string, any>
+export function parseData (options: ParseData.options): (data: string) => Record<string, any> | string
+export function parseData (options: ParseData.options, customize: Record<string, Function>): (data: string) => Record<string, any> | string
+
+export function parseBody (options: ParseData.parse[]): (msgbody: Record<string, any>) => Record<string, any>
+export function parseBody (options: ParseData.parse[], customize: Record<string, Function>): (msgbody: Record<string, any>) => Record<string, any>
 
 export function formatData (): (value: any) => any
 export function formatData (formats: ParseData.format | ParseData.format[]): (value: any) => any
