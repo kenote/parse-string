@@ -1,7 +1,7 @@
 {
   "name": "parse-string",
-  "version": "1.0.0",
-  "description": "..",
+  "version": "1.0.1",
+  "description": "Parse the string into a Map.",
   "main": "dist/index.js",
   "typings": "types/index.d.ts",
   "repository": "https://github.com/kenote/parse-string.git",
@@ -10,6 +10,9 @@
   "scripts": {
     "test": "jest",
     "build": "rm -rf ./dist && tsc"
+  },
+  "dependencies": {
+    "rule-judgment": "^1.1.3"
   },
   "devDependencies": {
     "@types/jest": "^25.2.3",
@@ -20,10 +23,15 @@
     "tslint": "^6.1.3",
     "typescript": "^3.9.7"
   },
+  "peerDependencies": {
+    "lodash": ">=4.17.x"
+  },
   "engines": {
     "node": ">8.0.0"
   },
-  "dependencies": {
-    "rule-judgment": "^1.1.2"
-  }
+  "keywords": [
+    "parser",
+    "format",
+    "map"
+  ]
 }
