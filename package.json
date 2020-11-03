@@ -1,6 +1,6 @@
 {
   "name": "parse-string",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Parse the string into a Map.",
   "main": "dist/index.js",
   "typings": "types/index.d.ts",
@@ -12,6 +12,7 @@
     "build": "rm -rf ./dist && tsc"
   },
   "dependencies": {
+    "md5.js": "^1.3.5",
     "rule-judgment": "^1.1.3"
   },
   "devDependencies": {
@@ -33,6 +34,8 @@
     "parser",
     "format",
     "map",
-    "msgbody"
+    "msgbody",
+    "filter",
+    "validator"
   ]
 }

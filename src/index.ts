@@ -1,6 +1,117 @@
-import { isString, isPlainObject, isNumber, isRegExp, isArray, compact, get, zipObject, map, omit, set, orderBy } from 'lodash'
-import { ParseData } from '../types'
+import { isString, isPlainObject, isNumber, isRegExp, isArray, compact, get, zipObject, map, omit, set, orderBy, isUndefined, isNull, isFunction, template } from 'lodash'
+import { ParseData, FilterData } from '../types'
 import ruleJudgment, { emit, isDateString } from 'rule-judgment'
+import * as MD5 from 'md5.js'
+
+/**
+ * 过滤数据
+ * @param options 
+ * @param customize 
+ */
+export function filterData (options: FilterData.options[], customize?: Record<string, Function>): (data: Record<string, any>) => Record<string, any> {
+  return (data: Record<string, any>) => {
+    let values: Record<string, any> = {}
+    for (let item of options) {
+      let { key, type, rules, format, defaultValue, md5, separator } = item
+      let value = data[key]
+      if (/\[\]$/.test(type) && !isArray(value)) {
+        value = toValue('string')(value || '').split(separator || /\,/)
+      }
+      if (/\[\]$/.test(type) && isArray(value)) {
+        let [, itype] = type.match(/(\S+)(\[\])$/)
+        value = compact(value).map( toValue(itype as 'string' | 'number' | 'date') )
+        rules && value.forEach( validateRule(rules, customize) )
+        if (defaultValue && value.length === 0) {
+          value = defaultValue
+        }
+        if (format) {
+          value = value.map( formatData(format, customize) )
+        }
+      }
+      else {
+        value = toValue(type as 'string' | 'number' | 'date')(value)
+        rules && validateRule(rules, customize)(value)
+        value = value || defaultValue
+        if (format) {
+          value = formatData(format, customize)(value)
+        }
+        if (md5) {
+          value = new MD5().update( template(md5)(values) ).digest('hex')
+        }
+      }
+      set(values, key, value)
+    }
+    return values
+  }
+}
+
+/**
+ * 验证签名
+ * @param options 
+ * @param sign 
+ */
+export function validSign (options: string, sign: string = 'sign'): (data: Record<string, any>) => boolean {
+  return (data: Record<string, any>) => {
+    let md5 = new MD5().update( template(options)(data) ).digest('hex')
+    return data[sign] === md5
+  }
+}
+
+/**
+ * 验证规则
+ * @param rules 
+ * @param customize 
+ */
+function validateRule (rules: FilterData.rule[], customize?: Record<string, Function>): (value: any) => void {
+  return (value: any) => {
+    for (let rule of rules ) {
+      let { required, message, min, max, pattern, validator } = rule
+      if (required && (isUndefined(value) || value === '')) {
+        throw new Error(message)
+      }
+      if (isString(value)) {
+        if (min && checkLength(value) < min) {
+          throw new Error(message)
+        }
+        if (max && checkLength(value) > max) {
+          throw new Error(message)
+        }
+        if (pattern) {
+          let reg = getRegexp(pattern)
+          if (!reg.test(value)) {
+            throw new Error(message)
+          }
+        }
+        if (validator && isString(validator)) {
+          if (customize && Object.keys(customize).includes(validator)) {
+            validator = customize[validator] as (value: any) => boolean
+          }
+        }
+        if (validator && isFunction(validator)) {
+          if (!validator(value)) {
+            throw new Error(message)
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * 检测字符串长度，中文算2个字符
+ * @param str string
+ * @returns number
+ */
+export function checkLength (str: string): number {
+  let size: number = 0
+  if (isNull(str)) return size
+  let arr: string[] = str.split('')
+  for (let word of arr) {
+    size++
+    (/[^\x00-\xff]/g.test(word)) && size++
+  }
+  return size
+}
 
 /**
  * 解析字符串
@@ -12,8 +123,9 @@ export function parseData (options: ParseData.options, customize?: Record<string
     if (!options) return data
     let { separator, collection, omits } = options
     let list = data.split(separator)
+    let notResults = collection.filter( ruleJudgment({ result: { $exists: false } }) )
     let values: any[] = list.map( (v: string, i: number) => {
-      let { type, format } = collection[i] || {}
+      let { type, format } = notResults[i] || {}
       let value = formatData(format, customize)(toValue(type)(v))
       return value
     })
@@ -211,7 +323,7 @@ export function toValue (type: 'string' | 'number' | 'date' | 'map' = 'string'):
       }
     }
     else {
-      if (type === 'string') {
+      if (type === 'string' && !isUndefined(value)) {
         val = isPlainObject(value) ? JSON.stringify(value) : String(value)
       }
       else if (type === 'date' && isNumber(value)) {

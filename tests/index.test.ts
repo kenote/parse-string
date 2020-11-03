@@ -1,9 +1,11 @@
-import { parseData, formatData, toValue } from '../src'
+import { parseData, formatData, toValue, filterData, validSign } from '../src'
 import { isDateString } from 'rule-judgment'
-import { ParseData } from '../types'
+import * as crypto from 'crypto'
+import { ParseData, FilterData } from '../types'
 
 const customize = {
-  add: (a, b) => a + b
+  add: (a, b) => a + b,
+  isPassword: value => /^(?=.*[A-Za-z])[A-Za-z0-9$@$!%*#?&]/.test(value)
 }
 
 describe('\nTests', () => {
@@ -177,6 +179,53 @@ describe('\nTests', () => {
       expect(result.level).toBe(9999)
       expect(result.money1).toBe(49553)
       expect(result.money2).toBe(49553)
+    })
+  })
+
+  describe('\n    Funtion filterData\n', () => {
+    test('Filter and verify data.', () => {
+      let options: FilterData.options[] = [
+        {
+          key: 'username',
+          type: 'string',
+          rules: [
+            { required: true, message: '用户名不能为空' },
+            { min: 4, max: 12, message: '用户名长度不能小于4或大于12（字符）' },
+            { pattern: '^[a-zA-Z]{1}[a-zA-Z0-9\_\-]', message: '用户名格式错误' }
+          ]
+        },
+        {
+          key: 'password',
+          type: 'string',
+          rules: [
+            { required: true, message: '密码不能为空' },
+            { min: 6, max: 15, message: '密码长度不能小于6或大于15（字符）' },
+            { validator: 'isPassword', message: '密码格式错误' }
+          ]
+        },
+        {
+          key: 'items',
+          type: 'string[]',
+          defaultValue: []
+        },
+        {
+          key: 'sign',
+          type: 'string',
+          md5: '${password}${username}'
+        }
+      ]
+      let result = filterData(options, customize)({ username: 'thondery', password: 'a123456', items: '1001,1002,1003' })
+      expect(result.username).toBe('thondery')
+      expect(result.password).toBe('a123456')
+      expect(result.items[0]).toBe('1001')
+      expect(result.sign).toBe(crypto.createHash('md5').update('a123456thondery').digest('hex'))
+    })
+  })
+
+  describe('\n    Funtion validSign\n', () => {
+    test('Verify signature.', () => {
+      let result = validSign('${password}${username}', 'sign')({ username: 'thondery', password: 'a123456', sign: '61a0375131b33b72b56e4e244d0b2f29' })
+      expect(result).toBe(true)
     })
   })
 })

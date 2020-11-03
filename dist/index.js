@@ -31,18 +31,144 @@ var __spread = (this && this.__spread) || function () {
     return ar;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.toValue = exports.formatData = exports.parseBody = exports.parseData = void 0;
+exports.toValue = exports.formatData = exports.parseBody = exports.parseData = exports.checkLength = exports.validSign = exports.filterData = void 0;
 var lodash_1 = require("lodash");
 var rule_judgment_1 = require("rule-judgment");
-function parseData(options, customize) {
+var MD5 = require("md5.js");
+function filterData(options, customize) {
     return function (data) {
         var e_1, _a;
+        var values = {};
+        try {
+            for (var options_1 = __values(options), options_1_1 = options_1.next(); !options_1_1.done; options_1_1 = options_1.next()) {
+                var item = options_1_1.value;
+                var key = item.key, type = item.type, rules = item.rules, format = item.format, defaultValue = item.defaultValue, md5 = item.md5, separator = item.separator;
+                var value = data[key];
+                if (/\[\]$/.test(type) && !lodash_1.isArray(value)) {
+                    value = toValue('string')(value || '').split(separator || /\,/);
+                }
+                if (/\[\]$/.test(type) && lodash_1.isArray(value)) {
+                    var _b = __read(type.match(/(\S+)(\[\])$/), 2), itype = _b[1];
+                    value = lodash_1.compact(value).map(toValue(itype));
+                    rules && value.forEach(validateRule(rules, customize));
+                    if (defaultValue && value.length === 0) {
+                        value = defaultValue;
+                    }
+                    if (format) {
+                        value = value.map(formatData(format, customize));
+                    }
+                }
+                else {
+                    value = toValue(type)(value);
+                    rules && validateRule(rules, customize)(value);
+                    value = value || defaultValue;
+                    if (format) {
+                        value = formatData(format, customize)(value);
+                    }
+                    if (md5) {
+                        value = new MD5().update(lodash_1.template(md5)(values)).digest('hex');
+                    }
+                }
+                lodash_1.set(values, key, value);
+            }
+        }
+        catch (e_1_1) { e_1 = { error: e_1_1 }; }
+        finally {
+            try {
+                if (options_1_1 && !options_1_1.done && (_a = options_1.return)) _a.call(options_1);
+            }
+            finally { if (e_1) throw e_1.error; }
+        }
+        return values;
+    };
+}
+exports.filterData = filterData;
+function validSign(options, sign) {
+    if (sign === void 0) { sign = 'sign'; }
+    return function (data) {
+        var md5 = new MD5().update(lodash_1.template(options)(data)).digest('hex');
+        return data[sign] === md5;
+    };
+}
+exports.validSign = validSign;
+function validateRule(rules, customize) {
+    return function (value) {
+        var e_2, _a;
+        try {
+            for (var rules_1 = __values(rules), rules_1_1 = rules_1.next(); !rules_1_1.done; rules_1_1 = rules_1.next()) {
+                var rule = rules_1_1.value;
+                var required = rule.required, message = rule.message, min = rule.min, max = rule.max, pattern = rule.pattern, validator = rule.validator;
+                if (required && (lodash_1.isUndefined(value) || value === '')) {
+                    throw new Error(message);
+                }
+                if (lodash_1.isString(value)) {
+                    if (min && checkLength(value) < min) {
+                        throw new Error(message);
+                    }
+                    if (max && checkLength(value) > max) {
+                        throw new Error(message);
+                    }
+                    if (pattern) {
+                        var reg = getRegexp(pattern);
+                        if (!reg.test(value)) {
+                            throw new Error(message);
+                        }
+                    }
+                    if (validator && lodash_1.isString(validator)) {
+                        if (customize && Object.keys(customize).includes(validator)) {
+                            validator = customize[validator];
+                        }
+                    }
+                    if (validator && lodash_1.isFunction(validator)) {
+                        if (!validator(value)) {
+                            throw new Error(message);
+                        }
+                    }
+                }
+            }
+        }
+        catch (e_2_1) { e_2 = { error: e_2_1 }; }
+        finally {
+            try {
+                if (rules_1_1 && !rules_1_1.done && (_a = rules_1.return)) _a.call(rules_1);
+            }
+            finally { if (e_2) throw e_2.error; }
+        }
+    };
+}
+function checkLength(str) {
+    var e_3, _a;
+    var size = 0;
+    if (lodash_1.isNull(str))
+        return size;
+    var arr = str.split('');
+    try {
+        for (var arr_1 = __values(arr), arr_1_1 = arr_1.next(); !arr_1_1.done; arr_1_1 = arr_1.next()) {
+            var word = arr_1_1.value;
+            size++;
+            (/[^\x00-\xff]/g.test(word)) && size++;
+        }
+    }
+    catch (e_3_1) { e_3 = { error: e_3_1 }; }
+    finally {
+        try {
+            if (arr_1_1 && !arr_1_1.done && (_a = arr_1.return)) _a.call(arr_1);
+        }
+        finally { if (e_3) throw e_3.error; }
+    }
+    return size;
+}
+exports.checkLength = checkLength;
+function parseData(options, customize) {
+    return function (data) {
+        var e_4, _a;
         if (!options)
             return data;
         var separator = options.separator, collection = options.collection, omits = options.omits;
         var list = data.split(separator);
+        var notResults = collection.filter(rule_judgment_1.default({ result: { $exists: false } }));
         var values = list.map(function (v, i) {
-            var _a = collection[i] || {}, type = _a.type, format = _a.format;
+            var _a = notResults[i] || {}, type = _a.type, format = _a.format;
             var value = formatData(format, customize)(toValue(type)(v));
             return value;
         });
@@ -54,12 +180,12 @@ function parseData(options, customize) {
                 lodash_1.set(obj, item.key, formatData(item.format, customize)(getResultValue(item.result, customize)(obj)));
             }
         }
-        catch (e_1_1) { e_1 = { error: e_1_1 }; }
+        catch (e_4_1) { e_4 = { error: e_4_1 }; }
         finally {
             try {
                 if (results_1_1 && !results_1_1.done && (_a = results_1.return)) _a.call(results_1);
             }
-            finally { if (e_1) throw e_1.error; }
+            finally { if (e_4) throw e_4.error; }
         }
         return lodash_1.omit(obj, omits || []);
     };
@@ -93,7 +219,7 @@ function parseBody(options, customize) {
 exports.parseBody = parseBody;
 function formatData(formats, customize) {
     return function (value) {
-        var e_2, _a;
+        var e_5, _a;
         formats = lodash_1.isArray(formats) ? formats : lodash_1.compact([formats]);
         if (formats.length === 0)
             return value;
@@ -103,12 +229,12 @@ function formatData(formats, customize) {
                 value = formatUtil(format, customize)(value);
             }
         }
-        catch (e_2_1) { e_2 = { error: e_2_1 }; }
+        catch (e_5_1) { e_5 = { error: e_5_1 }; }
         finally {
             try {
                 if (formats_1_1 && !formats_1_1.done && (_a = formats_1.return)) _a.call(formats_1);
             }
-            finally { if (e_2) throw e_2.error; }
+            finally { if (e_5) throw e_5.error; }
         }
         return value;
     };
@@ -224,7 +350,7 @@ function toValue(type) {
             }
         }
         else {
-            if (type === 'string') {
+            if (type === 'string' && !lodash_1.isUndefined(value)) {
                 val = lodash_1.isPlainObject(value) ? JSON.stringify(value) : String(value);
             }
             else if (type === 'date' && lodash_1.isNumber(value)) {

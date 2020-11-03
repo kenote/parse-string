@@ -19,6 +19,8 @@ $ yarn add parse-string
 
 - parse string into Map
 - format data
+- filter and verify data.
+- verify signature.
 
 ## API
 
@@ -53,9 +55,25 @@ Parse the msbody to the specified result.
 - `customize` - map of custom function
 - `msbody` - msbody of need parse
 
+### filterData (options: FilterData.options[], customize?: Record<string, Function>): (data: Record<string, any>) => Record<string, any>
+
+Filter and verify data.
+
+- `options` - filter options
+- `customize` - map of custom function
+- `data` - data of need filter
+
+### validSign (options: string, sign: string = 'sign'): (data: Record<string, any>) => boolean
+
+Verify signature.
+
+- `options` - style of signature
+- `sign` - feild of signature
+- `data` - data of submit
+
 ## Usages
 
-Example:
+Example: Parse string
 
 ```js
 import { parseData } from 'parse-string'
@@ -157,6 +175,63 @@ parseData(options, customize)(data)
 // }
 ```
 
+Example: Filter and verify data
+
+```js
+import { filterData, validSign } from 'parse-string'
+
+const customize = {
+  isPassword: value => /^(?=.*[A-Za-z])[A-Za-z0-9$@$!%*#?&]/.test(value)
+}
+
+const options = [
+  {
+    key: 'username',
+    type: 'string',
+    rules: [
+      { required: true, message: '用户名不能为空' },
+      { min: 4, max: 12, message: '用户名长度不能小于4或大于12（字符）' },
+      { pattern: '^[a-zA-Z]{1}[a-zA-Z0-9\_\-]', message: '用户名格式错误' }
+    ]
+  },
+  {
+    key: 'password',
+    type: 'string',
+    rules: [
+      { required: true, message: '密码不能为空' },
+      { min: 6, max: 15, message: '密码长度不能小于6或大于15（字符）' },
+      { validator: 'isPassword', message: '密码格式错误' }
+    ]
+  },
+  {
+    key: 'items',
+    type: 'string[]',
+    defaultValue: []
+  },
+  {
+    key: 'sign',
+    type: 'string',
+    md5: '${password}${username}'
+  }
+]
+
+const data = { username: 'thondery', password: 'a123456', items: '1001,1002,1003' }
+
+try {
+  let result = filterData(options, customize)(data)
+  // {
+  //   username: 'thondery', 
+  //   password: 'a123456', 
+  //   items: ['1001', '1002', '1003'],
+  //   sign: '61a0375131b33b72b56e4e244d0b2f29'
+  // }
+} catch (error) {
+  console.error(error.message)
+}
+
+validSign('${password}${username}', 'sign')({ username: 'thondery', password: 'a123456', sign: '61a0375131b33b72b56e4e244d0b2f29' })
+// true or false
+```
 
 ## License
 
@@ -169,4 +244,4 @@ this repo is released under the [MIT License](https://github.com/kenote/parse-st
 [travis-image]: https://travis-ci.com/kenote/parse-string.svg?branch=main
 [travis-url]: https://travis-ci.com/kenote/parse-string
 [licensed-image]: https://img.shields.io/badge/license-MIT-blue.svg
-[licensed-url]: https://github.com/kenote/parse-string/blob/master/LICENSE
+[licensed-url]: https://github.com/kenote/parse-string/blob/main/LICENSE
