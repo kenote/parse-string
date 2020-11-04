@@ -19,7 +19,7 @@ export function filterData (options: FilterData.options[], customize?: Record<st
       }
       if (/\[\]$/.test(type) && isArray(value)) {
         let [, itype] = type.match(/(\S+)(\[\])$/)
-        value = compact(value).map( toValue(itype as 'string' | 'number' | 'date') )
+        value = compact(value).map( toValue(itype as ParseData.parseType) )
         rules && value.forEach( validateRule(rules, customize) )
         if (defaultValue && value.length === 0) {
           value = defaultValue
@@ -29,7 +29,7 @@ export function filterData (options: FilterData.options[], customize?: Record<st
         }
       }
       else {
-        value = toValue(type as 'string' | 'number' | 'date')(value)
+        value = toValue(type as ParseData.parseType)(value)
         rules && validateRule(rules, customize)(value)
         value = value || defaultValue
         if (format) {
@@ -82,15 +82,15 @@ function validateRule (rules: FilterData.rule[], customize?: Record<string, Func
             throw new Error(message)
           }
         }
-        if (validator && isString(validator)) {
-          if (customize && Object.keys(customize).includes(validator)) {
-            validator = customize[validator] as (value: any) => boolean
-          }
+      }
+      if (validator && isString(validator)) {
+        if (customize && Object.keys(customize).includes(validator)) {
+          validator = customize[validator] as (value: any) => boolean
         }
-        if (validator && isFunction(validator)) {
-          if (!validator(value)) {
-            throw new Error(message)
-          }
+      }
+      if (validator && isFunction(validator)) {
+        if (!validator(value) || String(value) === 'Invalid Date') {
+          throw new Error(message)
         }
       }
     }
@@ -301,10 +301,11 @@ function getRegexp (regexp: RegExp | string): RegExp {
 
 /**
  * 转换指定类型值
- * @param type 'string' | 'number' | 'date' | 'map', 默认值 'string'
+ * @param type 'string' | 'number' | 'date' | 'map' | 'any', 默认值 'string'
  */
-export function toValue (type: 'string' | 'number' | 'date' | 'map' = 'string'): (value: any) => any {
+export function toValue (type: ParseData.parseType = 'string'): (value: any) => any {
   return (value: any) => {
+    if (type === 'any') return value
     let val = value
     if (isString(value)) {
       if (/^([\d\.]+)\%$/.test(value)) {
@@ -312,7 +313,7 @@ export function toValue (type: 'string' | 'number' | 'date' | 'map' = 'string'):
         val = String(val)
       }
       else if (type === 'date') {
-        val = new Date(isDateString(value) ? value : 0)
+        val = new Date(isDateString(value) ? value : (/^\d+$/.test(value) ? Number(value) : value))
       }
       else if (type === 'map') {
         try {

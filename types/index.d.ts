@@ -1,6 +1,8 @@
 
 export declare namespace ParseData {
 
+  type parseType = 'string' | 'number' | 'date' | 'map' | 'any'
+
   interface parse extends options {
     key               : string
     orderBy          ?: orderBy
@@ -15,14 +17,14 @@ export declare namespace ParseData {
 
   interface collection {
     key               : string
-    type             ?: 'string' | 'number' | 'date' | 'map'
+    type             ?: parseType
     format           ?: format | format[]
     result           ?: result
     
   }
 
   interface format {
-    type             ?: 'string' | 'number' | 'date' | 'map'
+    type             ?: parseType
     regexp           ?: RegExp | string
     substr           ?: string
     func             ?: string
@@ -48,9 +50,11 @@ export declare namespace ParseData {
 
 export declare namespace FilterData {
 
+  type filterType = 'string' | 'number' | 'date' | 'map' | 'string[]' | 'number[]' | 'date[]' | 'map[]' | 'any[]'
+
   interface options {
     key               : string
-    type              : 'string' | 'number' | 'date' | 'map' | 'string[]' | 'number[]' | 'date[]' | 'map[]'
+    type              : filterType
     separator        ?: string | RegExp
     rules            ?: rule[]
     format           ?: ParseData.format | ParseData.format[]
@@ -79,7 +83,7 @@ export function formatData (formats: ParseData.format | ParseData.format[]): (va
 export function formatData (formats: ParseData.format | ParseData.format[], customize: Record<string, Function>): (value: any) => any
 
 export function toValue (): (value: any) => any
-export function toValue (type: 'string' | 'number' | 'date' | 'map'): (value: any) => any
+export function toValue (type: ParseData.parseType): (value: any) => any
 
 export function checkLength (str: string): number
 

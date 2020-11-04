@@ -114,15 +114,15 @@ function validateRule(rules, customize) {
                             throw new Error(message);
                         }
                     }
-                    if (validator && lodash_1.isString(validator)) {
-                        if (customize && Object.keys(customize).includes(validator)) {
-                            validator = customize[validator];
-                        }
+                }
+                if (validator && lodash_1.isString(validator)) {
+                    if (customize && Object.keys(customize).includes(validator)) {
+                        validator = customize[validator];
                     }
-                    if (validator && lodash_1.isFunction(validator)) {
-                        if (!validator(value)) {
-                            throw new Error(message);
-                        }
+                }
+                if (validator && lodash_1.isFunction(validator)) {
+                    if (!validator(value) || String(value) === 'Invalid Date') {
+                        throw new Error(message);
                     }
                 }
             }
@@ -331,6 +331,8 @@ function getRegexp(regexp) {
 function toValue(type) {
     if (type === void 0) { type = 'string'; }
     return function (value) {
+        if (type === 'any')
+            return value;
         var val = value;
         if (lodash_1.isString(value)) {
             if (/^([\d\.]+)\%$/.test(value)) {
@@ -338,7 +340,7 @@ function toValue(type) {
                 val = String(val);
             }
             else if (type === 'date') {
-                val = new Date(rule_judgment_1.isDateString(value) ? value : 0);
+                val = new Date(rule_judgment_1.isDateString(value) ? value : (/^\d+$/.test(value) ? Number(value) : value));
             }
             else if (type === 'map') {
                 try {
