@@ -1,15 +1,4 @@
 "use strict";
-var __values = (this && this.__values) || function(o) {
-    var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) return m.call(o);
-    if (o && typeof o.length === "number") return {
-        next: function () {
-            if (o && i >= o.length) o = void 0;
-            return { value: o && o[i++], done: !o };
-        }
-    };
-    throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
-};
 var __read = (this && this.__read) || function (o, n) {
     var m = typeof Symbol === "function" && o[Symbol.iterator];
     if (!m) return o;
@@ -26,50 +15,68 @@ var __read = (this && this.__read) || function (o, n) {
     }
     return ar;
 };
+var __values = (this && this.__values) || function(o) {
+    var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+    if (m) return m.call(o);
+    if (o && typeof o.length === "number") return {
+        next: function () {
+            if (o && i >= o.length) o = void 0;
+            return { value: o && o[i++], done: !o };
+        }
+    };
+    throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+};
 var __spread = (this && this.__spread) || function () {
     for (var ar = [], i = 0; i < arguments.length; i++) ar = ar.concat(__read(arguments[i]));
     return ar;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.toValue = exports.formatData = exports.parseBody = exports.parseData = exports.checkLength = exports.validSign = exports.filterData = void 0;
+exports.toValue = exports.formatData = exports.parseBody = exports.parseData = exports.checkLength = exports.errorInfo = exports.validSign = exports.filterData = void 0;
 var lodash_1 = require("lodash");
 var rule_judgment_1 = require("rule-judgment");
 var MD5 = require("md5.js");
 function filterData(options, customize) {
-    return function (data) {
+    return function (data, errorCode) {
         var e_1, _a;
         var values = {};
+        var _loop_1 = function (item) {
+            var key = item.key, type = item.type, rules = item.rules, format = item.format, defaultValue = item.defaultValue, md5 = item.md5, separator = item.separator;
+            var value = data[key];
+            if (/\[\]$/.test(type) && !lodash_1.isArray(value)) {
+                value = toValue('string')(value || '').split(separator || /\,/);
+            }
+            if (/\[\]$/.test(type) && lodash_1.isArray(value)) {
+                var _a = __read(type.match(/(\S+)(\[\])$/), 2), itype = _a[1];
+                value = lodash_1.compact(value).map(toValue(itype));
+                if (rules) {
+                    value.forEach(function (v) { return validateRule(rules || [], customize)(v, errorCode); });
+                }
+                if (defaultValue && value.length === 0) {
+                    value = defaultValue;
+                }
+                if (format) {
+                    value = value.map(formatData(format, customize));
+                }
+            }
+            else {
+                value = toValue(type)(value);
+                if (rules) {
+                    validateRule(rules, customize)(value, errorCode);
+                }
+                value = value || defaultValue;
+                if (format) {
+                    value = formatData(format, customize)(value);
+                }
+                if (md5) {
+                    value = new MD5().update(lodash_1.template(md5)(values)).digest('hex');
+                }
+            }
+            lodash_1.set(values, key, value);
+        };
         try {
             for (var options_1 = __values(options), options_1_1 = options_1.next(); !options_1_1.done; options_1_1 = options_1.next()) {
                 var item = options_1_1.value;
-                var key = item.key, type = item.type, rules = item.rules, format = item.format, defaultValue = item.defaultValue, md5 = item.md5, separator = item.separator;
-                var value = data[key];
-                if (/\[\]$/.test(type) && !lodash_1.isArray(value)) {
-                    value = toValue('string')(value || '').split(separator || /\,/);
-                }
-                if (/\[\]$/.test(type) && lodash_1.isArray(value)) {
-                    var _b = __read(type.match(/(\S+)(\[\])$/), 2), itype = _b[1];
-                    value = lodash_1.compact(value).map(toValue(itype));
-                    rules && value.forEach(validateRule(rules, customize));
-                    if (defaultValue && value.length === 0) {
-                        value = defaultValue;
-                    }
-                    if (format) {
-                        value = value.map(formatData(format, customize));
-                    }
-                }
-                else {
-                    value = toValue(type)(value);
-                    rules && validateRule(rules, customize)(value);
-                    value = value || defaultValue;
-                    if (format) {
-                        value = formatData(format, customize)(value);
-                    }
-                    if (md5) {
-                        value = new MD5().update(lodash_1.template(md5)(values)).digest('hex');
-                    }
-                }
-                lodash_1.set(values, key, value);
+                _loop_1(item);
             }
         }
         catch (e_1_1) { e_1 = { error: e_1_1 }; }
@@ -92,26 +99,26 @@ function validSign(options, sign) {
 }
 exports.validSign = validSign;
 function validateRule(rules, customize) {
-    return function (value) {
+    return function (value, errorCode) {
         var e_2, _a;
         try {
             for (var rules_1 = __values(rules), rules_1_1 = rules_1.next(); !rules_1_1.done; rules_1_1 = rules_1.next()) {
                 var rule = rules_1_1.value;
-                var required = rule.required, message = rule.message, min = rule.min, max = rule.max, pattern = rule.pattern, validator = rule.validator;
+                var required = rule.required, message = rule.message, min = rule.min, max = rule.max, pattern = rule.pattern, validator = rule.validator, code = rule.code;
                 if (required && (lodash_1.isUndefined(value) || value === '')) {
-                    throw new Error(message);
+                    throw errorInfo(message, code || errorCode);
                 }
                 if (lodash_1.isString(value)) {
                     if (min && checkLength(value) < min) {
-                        throw new Error(message);
+                        throw errorInfo(message, code || errorCode);
                     }
                     if (max && checkLength(value) > max) {
-                        throw new Error(message);
+                        throw errorInfo(message, code || errorCode);
                     }
                     if (pattern) {
                         var reg = getRegexp(pattern);
                         if (!reg.test(value)) {
-                            throw new Error(message);
+                            throw errorInfo(message, code || errorCode);
                         }
                     }
                 }
@@ -122,7 +129,7 @@ function validateRule(rules, customize) {
                 }
                 if (validator && lodash_1.isFunction(validator)) {
                     if (!validator(value) || String(value) === 'Invalid Date') {
-                        throw new Error(message);
+                        throw errorInfo(message, code || errorCode);
                     }
                 }
             }
@@ -136,6 +143,14 @@ function validateRule(rules, customize) {
         }
     };
 }
+function errorInfo(message, code) {
+    var error = new Error(message);
+    if (code) {
+        error.code = code;
+    }
+    return error;
+}
+exports.errorInfo = errorInfo;
 function checkLength(str) {
     var e_3, _a;
     var size = 0;

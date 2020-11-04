@@ -69,6 +69,11 @@ export declare namespace FilterData {
     message           : string
     min              ?: number
     max              ?: number
+    code             ?: number
+  }
+
+  interface error extends Error {
+    code             ?: number
   }
 }
 
@@ -89,6 +94,11 @@ export function checkLength (str: string): number
 
 export function filterData (options: FilterData.options[]): (data: Record<string, any>) => Record<string, any>
 export function filterData (options: FilterData.options[], customize: Record<string, Function>): (data: Record<string, any>) => Record<string, any>
+export function filterData (options: FilterData.options[]): (data: Record<string, any>, errorCode: number) => Record<string, any>
+export function filterData (options: FilterData.options[], customize: Record<string, Function>): (data: Record<string, any>, errorCode: number) => Record<string, any>
 
 export function validSign (options: string): (data: Record<string, any>) => boolean
 export function validSign (options: string, sign: string): (data: Record<string, any>) => boolean
+
+export function errorInfo (message: string): FilterData.error
+export function errorInfo (message: string, code: number): FilterData.error

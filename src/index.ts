@@ -8,8 +8,8 @@ import * as MD5 from 'md5.js'
  * @param options 
  * @param customize 
  */
-export function filterData (options: FilterData.options[], customize?: Record<string, Function>): (data: Record<string, any>) => Record<string, any> {
-  return (data: Record<string, any>) => {
+export function filterData (options: FilterData.options[], customize?: Record<string, Function>): (data: Record<string, any>, errorCode?: number) => Record<string, any> {
+  return (data: Record<string, any>, errorCode?: number) => {
     let values: Record<string, any> = {}
     for (let item of options) {
       let { key, type, rules, format, defaultValue, md5, separator } = item
@@ -20,7 +20,9 @@ export function filterData (options: FilterData.options[], customize?: Record<st
       if (/\[\]$/.test(type) && isArray(value)) {
         let [, itype] = type.match(/(\S+)(\[\])$/)
         value = compact(value).map( toValue(itype as ParseData.parseType) )
-        rules && value.forEach( validateRule(rules, customize) )
+        if (rules) {
+          value.forEach( v => validateRule(rules || [], customize)(v, errorCode) )
+        }
         if (defaultValue && value.length === 0) {
           value = defaultValue
         }
@@ -30,7 +32,9 @@ export function filterData (options: FilterData.options[], customize?: Record<st
       }
       else {
         value = toValue(type as ParseData.parseType)(value)
-        rules && validateRule(rules, customize)(value)
+        if (rules) {
+          validateRule(rules, customize)(value, errorCode)
+        }
         value = value || defaultValue
         if (format) {
           value = formatData(format, customize)(value)
@@ -62,24 +66,24 @@ export function validSign (options: string, sign: string = 'sign'): (data: Recor
  * @param rules 
  * @param customize 
  */
-function validateRule (rules: FilterData.rule[], customize?: Record<string, Function>): (value: any) => void {
-  return (value: any) => {
+function validateRule (rules: FilterData.rule[], customize?: Record<string, Function>): (value: any, errorCode?: number) => void {
+  return (value: any, errorCode?: number) => {
     for (let rule of rules ) {
-      let { required, message, min, max, pattern, validator } = rule
+      let { required, message, min, max, pattern, validator, code } = rule
       if (required && (isUndefined(value) || value === '')) {
-        throw new Error(message)
+        throw errorInfo(message, code || errorCode)
       }
       if (isString(value)) {
         if (min && checkLength(value) < min) {
-          throw new Error(message)
+          throw errorInfo(message, code || errorCode)
         }
         if (max && checkLength(value) > max) {
-          throw new Error(message)
+          throw errorInfo(message, code || errorCode)
         }
         if (pattern) {
           let reg = getRegexp(pattern)
           if (!reg.test(value)) {
-            throw new Error(message)
+            throw errorInfo(message, code || errorCode)
           }
         }
       }
@@ -90,11 +94,24 @@ function validateRule (rules: FilterData.rule[], customize?: Record<string, Func
       }
       if (validator && isFunction(validator)) {
         if (!validator(value) || String(value) === 'Invalid Date') {
-          throw new Error(message)
+          throw errorInfo(message, code || errorCode)
         }
       }
     }
   }
+}
+
+/**
+ * 生成错误信息
+ * @param message 
+ * @param code 
+ */
+export function errorInfo (message: string, code?: number): FilterData.error {
+  let error: FilterData.error = new Error(message)
+  if (code) {
+    error.code = code
+  }
+  return error
 }
 
 /**
