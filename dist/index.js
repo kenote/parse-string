@@ -38,6 +38,7 @@ var MD5 = require("md5.js");
 function filterData(options, customize) {
     return function (data, errorCode) {
         var e_1, _a;
+        var _b;
         var values = {};
         var _loop_1 = function (item) {
             var key = item.key, type = item.type, rules = item.rules, format = item.format, defaultValue = item.defaultValue, md5 = item.md5, separator = item.separator;
@@ -46,7 +47,7 @@ function filterData(options, customize) {
                 value = toValue('string')(value || '').split(separator || /\,/);
             }
             if (/\[\]$/.test(type) && lodash_1.isArray(value)) {
-                var _a = __read(type.match(/(\S+)(\[\])$/), 2), itype = _a[1];
+                var _a = __read((_b = type.match(/(\S+)(\[\])$/)) !== null && _b !== void 0 ? _b : [], 2), itype = _a[1];
                 value = lodash_1.compact(value).map(toValue(itype));
                 if (rules) {
                     value.forEach(function (v) { return validateRule(rules || [], customize)(v, errorCode); });
