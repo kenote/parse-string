@@ -18,7 +18,7 @@ export function filterData (options: FilterData.options[], customize?: Record<st
         value = toValue('string')(value || '').split(separator || /\,/)
       }
       if (/\[\]$/.test(type) && isArray(value)) {
-        let [, itype] = type.match(/(\S+)(\[\])$/)
+        let [, itype] = type.match(/(\S+)(\[\])$/) ?? []
         value = compact(value).map( toValue(itype as ParseData.parseType) )
         if (rules) {
           value.forEach( v => validateRule(rules || [], customize)(v, errorCode) )
@@ -140,14 +140,14 @@ export function parseData (options: ParseData.options, customize?: Record<string
     if (!options) return data
     let { separator, collection, omits } = options
     let list = data.split(separator)
-    let notResults = collection.filter( ruleJudgment({ result: { $exists: false } }) )
+    let notResults = collection.filter( ruleJudgment<ParseData.collection>({ result: { $exists: false } }) )
     let values: any[] = list.map( (v: string, i: number) => {
       let { type, format } = notResults[i] || {}
       let value = formatData(format, customize)(toValue(type)(v))
       return value
     })
     let obj = zipObject(map(collection, 'key'), values)
-    let results = collection.filter( ruleJudgment({ result: { $exists: true } }) )
+    let results = collection.filter( ruleJudgment<ParseData.collection>({ result: { $exists: true } }) )
     for (let item of results) {
       set( obj, item.key, formatData(item.format, customize)(getResultValue(item.result!, customize)(obj)) )
     }
@@ -164,7 +164,7 @@ export function parseBody (options: ParseData.parse[], customize?: Record<string
   return (msgbody: Record<string, any>) => {
     if (!options) return msgbody
     for (let key in msgbody) {
-      let opts = options.find( ruleJudgment({ key }) )
+      let opts = options.find( ruleJudgment<ParseData.parse>({ key }) )
       if (opts) {
         let parser = parseData(opts, customize)
         let value = msgbody[key]
