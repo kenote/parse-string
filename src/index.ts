@@ -88,8 +88,11 @@ function validateRule (rules: FilterData.rule[], customize?: Record<string, Func
         }
       }
       if (validator && isString(validator)) {
-        if (customize && Object.keys(customize).includes(validator)) {
-          validator = customize[validator] as (value: any) => boolean
+        // if (customize && Object.keys(customize).includes(validator)) {
+        //   validator = customize[validator] as (value: any) => boolean
+        // }
+        if (customize) {
+          validator = get(customize, validator) as (value: any) => boolean
         }
       }
       if (validator && isFunction(validator)) {
@@ -262,9 +265,10 @@ function formatUtilFunc (name: string, options?: any[] | null, customize?: Recor
     try {
       value = value[name || 'toLocaleString'](...options || [])
     } catch (error) {
-      if (customize && Object.keys(customize).includes(name)) {
-        value = customize[name](value, ...options || [])
-      }
+      value = get(customize, name)?.(value, ...options || [])
+      // if (customize && Object.keys(customize).includes(name)) {
+      //   value = customize[name](value, ...options || [])
+      // }
     }
     return value
   }
@@ -279,11 +283,14 @@ function getResultValue (options: ParseData.result, customize?: Record<string, F
       if (typeof exec === 'function') {
         return exec(...opts)
       }
-      if (customize && Object.keys(customize).includes(exec)) {
-        return customize[exec](...opts)
+      if (customize) {
+        return get(customize, exec)?.(...opts)
       }
+      // if (customize && Object.keys(customize).includes(exec)) {
+      //   return customize[exec](...opts)
+      // }
     }
-    return getValue(data, customize)(defaultValue)
+    return getValue(data, customize)?.(defaultValue)
   }
 }
 
@@ -295,9 +302,12 @@ function getValue (data: Record<string, any>, customize?: Record<string, Functio
     }
     if (isArray(value)) {
       let [ exec, ...opts ] = value
-      if (customize && Object.keys(customize).includes(exec)) {
-        return customize[exec](...opts)
+      if (customize) {
+        return get(customize, exec)?.(...opts)
       }
+      // if (customize && Object.keys(customize).includes(exec)) {
+      //   return customize[exec](...opts)
+      // }
     }
     return value
   }

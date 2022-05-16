@@ -124,8 +124,8 @@ function validateRule(rules, customize) {
                     }
                 }
                 if (validator && lodash_1.isString(validator)) {
-                    if (customize && Object.keys(customize).includes(validator)) {
-                        validator = customize[validator];
+                    if (customize) {
+                        validator = lodash_1.get(customize, validator);
                     }
                 }
                 if (validator && lodash_1.isFunction(validator)) {
@@ -292,19 +292,19 @@ function formatUtilMap(options) {
 }
 function formatUtilFunc(name, options, customize) {
     return function (value) {
+        var _a;
         try {
             value = value[name || 'toLocaleString'].apply(value, __spread(options || []));
         }
         catch (error) {
-            if (customize && Object.keys(customize).includes(name)) {
-                value = customize[name].apply(customize, __spread([value], options || []));
-            }
+            value = (_a = lodash_1.get(customize, name)) === null || _a === void 0 ? void 0 : _a.apply(void 0, __spread([value], options || []));
         }
         return value;
     };
 }
 function getResultValue(options, customize) {
     return function (data) {
+        var _a, _b;
         var defaultValue = options.defaultValue, formula = options.formula;
         if (formula) {
             var exec = formula.exec;
@@ -312,23 +312,24 @@ function getResultValue(options, customize) {
             if (typeof exec === 'function') {
                 return exec.apply(void 0, __spread(opts));
             }
-            if (customize && Object.keys(customize).includes(exec)) {
-                return customize[exec].apply(customize, __spread(opts));
+            if (customize) {
+                return (_a = lodash_1.get(customize, exec)) === null || _a === void 0 ? void 0 : _a.apply(void 0, __spread(opts));
             }
         }
-        return getValue(data, customize)(defaultValue);
+        return (_b = getValue(data, customize)) === null || _b === void 0 ? void 0 : _b(defaultValue);
     };
 }
 function getValue(data, customize) {
     return function (value) {
+        var _a;
         if (lodash_1.isString(value) && /^\$(\_){2}/.test(value)) {
-            var _a = __read(value.match(/^\$(\_){2}([a-zA-Z0-9\_\-\.]+)/) || [], 3), key = _a[2];
+            var _b = __read(value.match(/^\$(\_){2}([a-zA-Z0-9\_\-\.]+)/) || [], 3), key = _b[2];
             return lodash_1.get(data, key);
         }
         if (lodash_1.isArray(value)) {
-            var _b = __read(value), exec = _b[0], opts = _b.slice(1);
-            if (customize && Object.keys(customize).includes(exec)) {
-                return customize[exec].apply(customize, __spread(opts));
+            var _c = __read(value), exec = _c[0], opts = _c.slice(1);
+            if (customize) {
+                return (_a = lodash_1.get(customize, exec)) === null || _a === void 0 ? void 0 : _a.apply(void 0, __spread(opts));
             }
         }
         return value;
