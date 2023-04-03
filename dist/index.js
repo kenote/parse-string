@@ -64,7 +64,7 @@ function filterData(options, customize) {
                 if (rules) {
                     validateRule(rules, customize)(value, errorCode);
                 }
-                value = value || defaultValue;
+                value = value !== null && value !== void 0 ? value : defaultValue;
                 if (format) {
                     value = formatData(format, customize)(value);
                 }
