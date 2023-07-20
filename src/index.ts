@@ -35,7 +35,7 @@ export function filterData (options: FilterData.options[], customize?: Record<st
         if (rules) {
           validateRule(rules, customize)(value, errorCode)
         }
-        value = value ?? defaultValue
+        value = value == undefined || value == '' ? defaultValue : value
         if (format) {
           value = formatData(format, customize)(value)
         }
