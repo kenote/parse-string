@@ -70,8 +70,13 @@ function validateRule (rules: FilterData.rule[], customize?: Record<string, Func
   return (value: any, errorCode?: number) => {
     for (let rule of rules ) {
       let { required, message, min, max, pattern, validator, code } = rule
-      if (required && (isUndefined(value) || value === '')) {
-        throw errorInfo(message, code || errorCode)
+      if (isUndefined(value) || value === '') {
+        if (required) {
+          throw errorInfo(message, code || errorCode)
+        }
+        else {
+          break
+        }
       }
       if (isString(value)) {
         if (min && checkLength(value) < min) {

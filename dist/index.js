@@ -106,8 +106,13 @@ function validateRule(rules, customize) {
             for (var rules_1 = __values(rules), rules_1_1 = rules_1.next(); !rules_1_1.done; rules_1_1 = rules_1.next()) {
                 var rule = rules_1_1.value;
                 var required = rule.required, message = rule.message, min = rule.min, max = rule.max, pattern = rule.pattern, validator = rule.validator, code = rule.code;
-                if (required && (lodash_1.isUndefined(value) || value === '')) {
-                    throw errorInfo(message, code || errorCode);
+                if (lodash_1.isUndefined(value) || value === '') {
+                    if (required) {
+                        throw errorInfo(message, code || errorCode);
+                    }
+                    else {
+                        break;
+                    }
                 }
                 if (lodash_1.isString(value)) {
                     if (min && checkLength(value) < min) {
