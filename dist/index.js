@@ -357,11 +357,7 @@ function toValue(type) {
             return value;
         var val = value;
         if (lodash_1.isString(value)) {
-            if (/^([\d\.]+)\%$/.test(value)) {
-                val = Number(value.replace(/\%$/i, '')) / 100;
-                val = String(val);
-            }
-            else if (type === 'date') {
+            if (type === 'date') {
                 val = new Date(rule_judgment_1.isDateString(value) ? value : (/^\d+$/.test(value) ? Number(value) : value));
             }
             else if (type === 'map') {
@@ -371,6 +367,9 @@ function toValue(type) {
                 catch (error) {
                     val = undefined;
                 }
+            }
+            else {
+                val = value;
             }
         }
         else {
@@ -382,8 +381,8 @@ function toValue(type) {
             }
         }
         if (type === 'number') {
-            if (lodash_1.isString(val) && !/^\d+$/.test(val) && rule_judgment_1.isDateString(val)) {
-                val = new Date(val);
+            if (/^([\d\.]+)\%$/.test(String(val))) {
+                val = Number(val.replace(/\%$/i, '')) / 100;
             }
             val = Number(val);
         }

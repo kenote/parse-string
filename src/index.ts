@@ -340,11 +340,7 @@ export function toValue (type: ParseData.parseType = 'string'): (value: any) => 
     if (type === 'any') return value
     let val = value
     if (isString(value)) {
-      if (/^([\d\.]+)\%$/.test(value)) {
-        val = Number(value.replace(/\%$/i, '')) / 100
-        val = String(val)
-      }
-      else if (type === 'date') {
+      if (type === 'date') {
         val = new Date(isDateString(value) ? value : (/^\d+$/.test(value) ? Number(value) : value))
       }
       else if (type === 'map') {
@@ -353,6 +349,9 @@ export function toValue (type: ParseData.parseType = 'string'): (value: any) => 
         } catch (error) {
           val = undefined
         }
+      }
+      else {
+        val = value
       }
     }
     else {
@@ -364,8 +363,8 @@ export function toValue (type: ParseData.parseType = 'string'): (value: any) => 
       }
     }
     if (type === 'number') {
-      if (isString(val) && !/^\d+$/.test(val) && isDateString(val)) {
-        val = new Date(val)
+      if (/^([\d\.]+)\%$/.test(String(val))) {
+        val = Number(val.replace(/\%$/i, '')) / 100
       }
       val = Number(val)
     }
